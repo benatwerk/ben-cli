@@ -1,0 +1,20 @@
+{
+    "name": "ben-cli",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "bin": {
+        "ben-cli": "./index.js"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "deepmerge": "^4.3.1",
+        "path": "^0.12.7",
+        "yargs": "^17.7.2"
+    }
+}
