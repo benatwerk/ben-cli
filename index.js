@@ -9,6 +9,9 @@ const deepmerge = require("deepmerge");
  * This script uses yargs to create a CLI tool that allows the user to create a new React
  * project with various options.
  *
+ * The tool copies files from the templates directories to the project directory based on the user's options.
+ * The default templates directory is used for all cases, and additional directories are used based on the user's options.
+ *
  * @file This file contains the code for the CLI tool.
  * @summary A CLI tool for creating new React projects with various options.
  * @requires yargs
