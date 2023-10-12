@@ -43,7 +43,7 @@ const argv = yargs(hideBin(process.argv))
             type: "boolean",
             description: "Use Classnames library",
         },
-        linting: {
+        airbnb: {
             alias: "l",
             type: "boolean",
             description: "Use Airbnb linting rules",
@@ -368,7 +368,7 @@ if (argv._.includes("create")) {
     if (argv.typescript) features.push("typescript");
     if (argv.sass) features.push("sass");
     if (argv.classnames) features.push("classnames");
-    if (argv.linting) features.push("linting");
+    if (argv.airbnb) features.push("airbnb");
 
     // Generate webpack config
     generateWebpackConfig(features, newProjectPath, language);
