@@ -49,7 +49,7 @@ const argv = yargs(hideBin(process.argv))
     .help().argv;
 
 const language = argv.typescript ? "ts" : "js";
-
+const projectName = argv.name || "my-react-app";
 /**
  * Ensures that a directory exists at the given path. If the directory does not exist,
  * it will be created recursively.
@@ -108,17 +108,26 @@ const copyFolderSync = (from, to) => {
  * @returns {void}
  */
 const mergeJsonFiles = (newProjectPath, featurePath, fileName) => {
+    const mainFilePath = path.join(newProjectPath, fileName);
+    const featureFilePath = path.join(featurePath, fileName);
+
+    if (!fs.existsSync(mainFilePath) || !fs.existsSync(featureFilePath)) {
+        console.error(
+            `Either ${mainFilePath} or ${featureFilePath} doesn't exist.`
+        );
+        return;
+    }
+
     try {
-        const mainFilePath = path.join(newProjectPath, fileName);
-        const featureFilePath = path.join(featurePath, fileName);
+        const mainFileContent = fs.readFileSync(mainFilePath, "utf8");
+        const featureFileContent = fs.readFileSync(featureFilePath, "utf8");
 
-        const mainFileJson = require(mainFilePath);
-        const featureFileJson = require(featureFilePath);
+        const mainFileJson = JSON.parse(mainFileContent);
+        const featureFileJson = JSON.parse(featureFileContent);
 
-        // Deep-merge using deepmerge package
         const mergedJson = deepmerge(mainFileJson, featureFileJson);
 
-        // Write back to the main file
+        mergedJson.name = projectName;
         fs.writeFileSync(mainFilePath, JSON.stringify(mergedJson, null, 2));
     } catch (e) {
         console.error(`An error occurred: ${e}`);
@@ -182,7 +191,13 @@ const generateWebpackConfig = (features, projectPath, language) => {
             path: "path.resolve(__dirname, 'dist')",
         },
         devServer: {
-            static: "./dist",
+            static: [
+                {
+                    directory: "path.resolve(__dirname, 'public')",
+                    publicPath: "/",
+                },
+                "./dist",
+            ],
             open: true,
             hot: true,
             port: 3000,
@@ -209,7 +224,8 @@ const generateWebpackConfig = (features, projectPath, language) => {
                     arrayMerge: (dest, source) => dest.concat(source),
                 }
             );
-        } else if (feature === "sass") {
+        }
+        if (feature === "sass") {
             allFeatureConfigs = deepmerge(
                 allFeatureConfigs,
                 generateSassConfig(),
@@ -225,6 +241,7 @@ const generateWebpackConfig = (features, projectPath, language) => {
         arrayMerge: (dest, source) => dest.concat(source),
     });
 
+    // This variable contains the initial content for the configuration file.
     let configContent =
         "const path = require('path');\nconst HtmlWebpackPlugin = require('html-webpack-plugin');\n";
     configContent += "module.exports = " + JSON.stringify(baseConfig, null, 4);
@@ -233,6 +250,10 @@ const generateWebpackConfig = (features, projectPath, language) => {
     configContent = configContent.replace(
         '"path": "path.resolve(__dirname, \'dist\')"',
         '"path": path.resolve(__dirname, "dist")'
+    );
+    configContent = configContent.replace(
+        '"directory": "path.resolve(__dirname, \'public\')"',
+        '"directory": path.resolve(__dirname, "public")'
     );
     configContent = configContent.replace(
         `"test": "/.(tsx?)$"`,
@@ -248,7 +269,7 @@ const generateWebpackConfig = (features, projectPath, language) => {
     );
     configContent = configContent.replace(
         '"HtmlWebpackPluginPlaceholder"',
-        `new HtmlWebpackPlugin({template: "./src/index.html"})`
+        `new HtmlWebpackPlugin({template: "./index.html"})`
     );
 
     const webpackConfigPath = path.join(projectPath, "webpack.config.js");
@@ -310,8 +331,7 @@ const constructAppFile = (features, projectPath, language = "js") => {
     appFileContent += " {\n";
     appFileContent += "  return (\n";
     appFileContent += '    <div className="App">\n';
-    appFileContent += "      {/* Add your components here */}\n";
-    appFileContent += "      Hi... I'm a react app \n";
+    appFileContent += "      I'm a react app...\n";
     // Add the list of features
     if (features.length > 0) {
         appFileContent += "      <ul>\n";
@@ -334,7 +354,6 @@ const constructAppFile = (features, projectPath, language = "js") => {
 };
 
 if (argv._.includes("create")) {
-    const projectName = argv.name || "my-react-app";
     const newProjectPath = path.join(process.cwd(), projectName);
 
     // Always start with the default template
@@ -366,4 +385,9 @@ if (argv._.includes("create")) {
     }
 
     console.log(`Project ${projectName} setup complete!`);
+    console.log(`To get started, run the following commands:`);
+    console.log(`- cd ${projectName}`);
+    console.log(`- npm install`);
+    console.log(`- npm start`);
+    console.log(`🦦`);
 }
