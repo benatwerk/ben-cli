@@ -15,7 +15,7 @@ I just did this as a coding project.
 
 ## Directory Structure
 
-```bash
+```
 .
 ├── airbnb
 │   ├── .eslintignore
