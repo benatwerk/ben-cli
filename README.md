@@ -17,36 +17,39 @@ I just did this as a coding project.
 
 ```bash
 .
-├── index.js
-├── package.json
-└── templates
 ├── airbnb
-│ ├── .eslintignore
-│ └── .eslintrc.json
+│   ├── .eslintignore
+│   └── .eslintrc.json
 ├── classnames
-│ └── package.json
+│   └── package.json
 ├── default
-│ ├── .eslintrc.json
-│ ├── index.html
-│ ├── package.json
-│ ├── public
-│ │ └── favicon.ico
-│ └── src
-│ ├── App.css
-│ ├── assets
-│ │ └── images
-│ ├── components
-│ └── index.js
+│   ├── .babelrc
+│   ├── .eslintignore
+│   ├── .eslintrc.json
+│   ├── index.html
+│   ├── jest.setup.js
+│   ├── package.json
+│   ├── public
+│   │   └── favicon.ico
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.test.js
+│   │   ├── assets
+│   │   │   └── images
+│   │   ├── components
+│   │   └── index.js
+│   └── webpack.config.js
 ├── sass
-│ ├── package.json
-│ └── src
-│ └── App.scss
+│   ├── package.json
+│   └── src
+│       └── App.scss
 └── typescript
-├── .eslintrc.json
-├── package.json
-├── src
-│ └── index.tsx
-└── tsconfig.json
+    ├── .eslintrc.json
+    ├── package.json
+    ├── src
+    │   ├── App.test.tsx
+    │   └── index.tsx
+    └── tsconfig.json
 ```
 
 ## Installation
@@ -78,7 +81,7 @@ npx ben-cli create [name] [options]
 -   `--typescript, -t`: Use TypeScript
 -   `--sass, -s`: Use Sass
 -   `--classnames, -c`: Use Classnames library
--   `--airbnb, -l`: Use Airbnb linting rules
+-   `--airbnb, -a`: Use Airbnb linting rules
 
 ### Example:
 

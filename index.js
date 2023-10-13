@@ -302,6 +302,13 @@ const generateWebpackConfig = (features, projectPath, language) => {
     fs.writeFileSync(webpackConfigPath, configContent);
 };
 
+/**
+ * Generates a Jest configuration object based on selected features, and writes it to a file.
+ *
+ * @param {string[]} features - An array of selected features.
+ * @param {string} projectPath - The path to the project directory.
+ * @param {string} language - The programming language used in the project.
+ */
 const generateJestConfig = (features, projectPath, language) => {
     let baseConfig = {
         testEnvironment: "jsdom",
