@@ -4,6 +4,7 @@ const { hideBin } = require("yargs/helpers");
 const fs = require("fs");
 const path = require("path");
 const deepmerge = require("deepmerge");
+const { green, yellow, cyan } = require("kleur");
 
 /**
  * This script uses yargs to create a CLI tool that allows the user to create a new React
@@ -44,7 +45,7 @@ const argv = yargs(hideBin(process.argv))
             description: "Use Classnames library",
         },
         airbnb: {
-            alias: "l",
+            alias: "a",
             type: "boolean",
             description: "Use Airbnb linting rules",
         },
@@ -87,16 +88,20 @@ const removeFile = (filePath) => {
  */
 const copyFolderSync = (from, to) => {
     if (!fs.existsSync(to)) {
-        fs.mkdirSync(to, { recursive: true });
+        // create directory if it doesn't exist
+        fs.mkdirSync(to, { recursive: true }); // create directory
     }
     fs.readdirSync(from).forEach((element) => {
         const stat = fs.statSync(path.join(from, element));
         if (stat.isFile()) {
+            // copy file if it is a file
             const dest = path.join(to, element);
             if (!fs.existsSync(dest)) {
+                // copy file if it doesn't exist
                 fs.copyFileSync(path.join(from, element), dest);
             }
         } else if (stat.isDirectory()) {
+            // copy directory if it is a directory
             copyFolderSync(path.join(from, element), path.join(to, element));
         }
     });
@@ -142,7 +147,7 @@ const mergeJsonFiles = (newProjectPath, featurePath, fileName) => {
  *
  * @returns {Object} Webpack configuration object.
  */
-const generateSassConfig = () => {
+const generateWebpackSassConfig = () => {
     return {
         module: {
             rules: [
@@ -160,7 +165,7 @@ const generateSassConfig = () => {
  *
  * @returns {Object} The TypeScript configuration object.
  */
-const generateTypescriptConfig = () => {
+const generateWebpackTypescriptConfig = () => {
     return {
         resolve: {
             extensions: [".ts", ".tsx"],
@@ -206,7 +211,21 @@ const generateWebpackConfig = (features, projectPath, language) => {
             port: 3000,
         },
         module: {
-            rules: [],
+            rules: [
+                {
+                    test: "/.(js|jsx)$",
+                    exclude: "/node_modules/",
+                    use: {
+                        loader: "babel-loader",
+                        options: {
+                            presets: [
+                                "@babel/preset-env",
+                                "@babel/preset-react",
+                            ],
+                        },
+                    },
+                },
+            ],
         },
         resolve: {
             extensions: [".js"],
@@ -222,7 +241,7 @@ const generateWebpackConfig = (features, projectPath, language) => {
         if (feature === "typescript") {
             allFeatureConfigs = deepmerge(
                 allFeatureConfigs,
-                generateTypescriptConfig(),
+                generateWebpackTypescriptConfig(),
                 {
                     arrayMerge: (dest, source) => dest.concat(source),
                 }
@@ -231,7 +250,7 @@ const generateWebpackConfig = (features, projectPath, language) => {
         if (feature === "sass") {
             allFeatureConfigs = deepmerge(
                 allFeatureConfigs,
-                generateSassConfig(),
+                generateWebpackSassConfig(),
                 {
                     arrayMerge: (dest, source) => dest.concat(source),
                 }
@@ -267,6 +286,10 @@ const generateWebpackConfig = (features, projectPath, language) => {
         `"test": /\\.scss$/`
     );
     configContent = configContent.replace(
+        `"test": "/.(js|jsx)$"`,
+        `"test": /\\.(js|jsx)$/`
+    );
+    configContent = configContent.replace(
         '"exclude": "/node_modules/"',
         '"exclude": /node_modules/'
     );
@@ -277,6 +300,57 @@ const generateWebpackConfig = (features, projectPath, language) => {
 
     const webpackConfigPath = path.join(projectPath, "webpack.config.js");
     fs.writeFileSync(webpackConfigPath, configContent);
+};
+
+const generateJestConfig = (features, projectPath, language) => {
+    let baseConfig = {
+        testEnvironment: "jsdom",
+        transform: {
+            "^.+\\.jsx?$": "babel-jest",
+        },
+        moduleNameMapper: {
+            "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+            "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/__mocks__/fileMock.js",
+        },
+        setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+    };
+
+    // Initialize an empty object to hold all the feature configurations
+    let allFeatureConfigs = {};
+
+    // Add feature configs based on selected features
+    features.forEach((feature) => {
+        if (feature === "typescript") {
+            allFeatureConfigs = deepmerge(
+                allFeatureConfigs,
+                generateJestTypescriptConfig(),
+                {
+                    arrayMerge: (dest, source) => dest.concat(source),
+                }
+            );
+        }
+    });
+
+    // Merge all feature configs into the base config
+    baseConfig = deepmerge(baseConfig, allFeatureConfigs, {
+        arrayMerge: (dest, source) => dest.concat(source),
+    });
+
+    // This variable contains the initial content for the configuration file.
+    let configContent =
+        "module.exports = " + JSON.stringify(baseConfig, null, 4);
+
+    const jestConfigPath = path.join(projectPath, "jest.config.js");
+    fs.writeFileSync(jestConfigPath, configContent);
+};
+
+// Example feature-specific configuration generator for TypeScript
+const generateJestTypescriptConfig = () => {
+    return {
+        transform: {
+            "^.+\\.(ts|tsx)$": "ts-jest",
+        },
+    };
 };
 
 /**
@@ -365,13 +439,16 @@ if (argv._.includes("create")) {
 
     // Features to be added
     const features = [];
-    if (argv.typescript) features.push("typescript");
-    if (argv.sass) features.push("sass");
-    if (argv.classnames) features.push("classnames");
     if (argv.airbnb) features.push("airbnb");
+    if (argv.classnames) features.push("classnames");
+    if (argv.sass) features.push("sass");
+    if (argv.typescript) features.push("typescript");
 
     // Generate webpack config
     generateWebpackConfig(features, newProjectPath, language);
+
+    // Generate jest config
+    generateJestConfig(features, newProjectPath, language);
 
     // Add selected features
     features.forEach((feature) => addFeature(feature, newProjectPath));
@@ -385,12 +462,20 @@ if (argv._.includes("create")) {
     }
     if (argv.typescript) {
         removeFile(path.join(newProjectPath, "src", "index.js"));
+        removeFile(path.join(newProjectPath, "src", "App.test.js"));
     }
 
-    console.log(`Project ${projectName} setup complete!`);
-    console.log(`To get started, run the following commands:`);
-    console.log(`- cd ${projectName}`);
-    console.log(`- npm install`);
-    console.log(`- npm start`);
-    console.log(`🦦`);
+    const exitMessage = (projectName) => {
+        console.log(
+            green().bold(`Project "${projectName}" Setup Complete!`),
+            `🦦`
+        );
+        console.log(yellow("To get started, run the following commands:"));
+        console.log(cyan(`- cd ${projectName}`));
+        console.log(cyan("- npm install"));
+        console.log(cyan("- npm start"));
+    };
+
+    // Display exit message
+    exitMessage(projectName);
 }
